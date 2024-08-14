@@ -1,0 +1,70 @@
+{% block content %}
+<style>
+  .table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .table th, .table td {
+    padding: 8px;
+    border: 1px solid #ddd; /* Add thin borders for separation */
+    text-align: left;
+  }
+
+  .table th {
+    background-color: #f2f2f2;
+  }
+
+  .title-1 {
+    font-size: 24px;
+    margin-bottom: 16px;
+  }
+
+  .text-danger {
+    color: red;
+  }
+
+  a {
+    color: black;
+    text-decoration: none;
+  }
+
+</style>
+
+<p class="title-1">Teachers</p>
+
+<div>
+  <table class="table">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>ID No.</th>
+        <th>Full Name</th>
+        <th>Email</th>
+        <th>Mob No.</th>
+        <th>Address/City</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for teacher in teachers %}
+      <tr>
+        <td> {{ forloop.counter }}.</td>
+        <td>{{ teacher.username }}</td>
+        <td><a href="{% url 'profile_single' teacher.id %}">{{ teacher.get_full_name }}</a></td>
+        <td>{{ teacher.email }}</td>
+        <td>{{ teacher.phone }}</td>
+        <td>{{ teacher.address }}</td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="6">
+          <span class="text-danger">
+            No Teacher(s).
+          </span>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock content %}
