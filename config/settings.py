@@ -109,12 +109,12 @@ ASGI_APPLICATION = "config.asgi.application"
 # Database
 # https://docs.djangoproject.com/en/2.2/ref/settings/#databases
 
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.sqlite3',
-#         'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
-#     }
-# }
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+    }
+}
 
 # -----------------------------
 # NOTE: Some model fields may not work on sqlite db,
@@ -129,16 +129,16 @@ ASGI_APPLICATION = "config.asgi.application"
 #         "PORT": config("DB_PORT", default=5432),
 #     }
 # }
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': config('DB_NAME', default='school_management_system'),
-        'USER': config('DB_USER', default='mydbuser'),
-        'PASSWORD': config('DB_PASSWORD', default='new_password'),
-        'HOST': config('DB_HOST', default='localhost'),
-        'PORT': config('DB_PORT', default=5432),
-    }
-}
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.postgresql',
+#         'NAME': config('DB_NAME', default='school_management_system'),
+#         'USER': config('DB_USER', default='mydbuser'),
+#         'PASSWORD': config('DB_PASSWORD', default='new_password'),
+#         'HOST': config('DB_HOST', default='localhost'),
+#         'PORT': config('DB_PORT', default=5432),
+#     }
+# }
 
 
 
