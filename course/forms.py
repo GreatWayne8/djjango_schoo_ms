@@ -2,6 +2,15 @@ from django import forms
 from accounts.models import User
 from .models import Program, Course, CourseAllocation, Upload, UploadVideo
 
+class DropCourseForm(forms.ModelForm):
+    class Meta:
+        model = Course
+        fields = ["title", "code"]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["title"].widget.attrs.update({"class": "form-control"})
+        self.fields["code"].widget.attrs.update({"class": "form-control"})
 
 class ProgramForm(forms.ModelForm):
     class Meta:

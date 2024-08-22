@@ -8,6 +8,8 @@ from django.conf import settings
 from django.utils.decorators import method_decorator
 from django.views.generic import ListView
 from django_filters.views import FilterView
+from .forms import CourseAddForm, DropCourseForm
+from .models import Course, CourseOffer, SchoolCalendar
 
 from accounts.models import User, Student
 from core.models import Session, Semester
@@ -23,6 +25,55 @@ from .forms import (
 )
 from .filters import ProgramFilter, CourseAllocationFilter
 from .models import Program, Course, CourseAllocation, Upload, UploadVideo
+
+
+
+@login_required
+def add_course(request):
+    department_head = request.user.departmenthead
+    calendar = SchoolCalendar.objects.latest('start_date')
+
+    if not calendar.is_within_add_drop_period():
+        return render(request, 'error.html', {'message': 'Not within add/drop period.'})
+
+    if request.method == 'POST':
+        form = CourseAddForm(request.POST)
+        if form.is_valid():
+            course = form.save(commit=False)
+            course.program = department_head.program  # Ensure course is associated with the department head's program
+            course.save()
+
+            # Create a CourseOffer instance
+            CourseOffer.objects.create(dep_head=department_head, program=department_head.program, course=course)
+
+            return redirect('course_list')
+    else:
+        form = CourseAddForm()
+    
+    return render(request, 'add_course.html', {'form': form})
+
+
+@login_required
+def drop_course(request, course_id):
+    department_head = request.user.departmenthead
+    calendar = SchoolCalendar.objects.latest('start_date')
+
+    if not calendar.is_within_add_drop_period():
+        return render(request, 'error.html', {'message': 'Not within add/drop period.'})
+
+    try:
+        course_offer = CourseOffer.objects.get(course__id=course_id, dep_head=department_head)
+
+        if course_offer.is_course_available_for_department(course_id):
+            course_offer.course.delete()
+            course_offer.delete()
+            return redirect('course_list')
+        else:
+            return render(request, 'error.html', {'message': 'Course not available for this department head.'})
+    except CourseOffer.DoesNotExist:
+        return render(request, 'error.html', {'message': 'Course not found.'})
+
+
 
 
 @method_decorator([login_required], name="dispatch")
@@ -514,24 +565,24 @@ def course_registration(request):
         }
         return render(request, "course/course_registration.html", context)
 
-
 @login_required
 @student_required
 def course_drop(request):
     if request.method == "POST":
         student = Student.objects.get(student__pk=request.user.id)
-        ids = ()
-        data = request.POST.copy()
-        data.pop("csrfmiddlewaretoken", None)  # remove csrf_token
-        for key in data.keys():
-            ids = ids + (str(key),)
-        for s in range(0, len(ids)):
-            course = Course.objects.get(pk=ids[s])
-            obj = TakenCourse.objects.get(student=student, course=course)
-            obj.delete()
-        messages.success(request, "Successfully Dropped!")
+        ids = tuple(request.POST.keys())  # Get course IDs from POST data
+        for course_id in ids:
+            course = get_object_or_404(Course, pk=course_id)
+            try:
+                taken_course = TakenCourse.objects.get(student=student, course=course)
+                taken_course.delete()
+            except TakenCourse.DoesNotExist:
+                messages.error(request, f"Course {course.title} not found in your registered courses.")
+        messages.success(request, "Courses dropped successfully!")
         return redirect("course_registration")
-
+    else:
+        # Handle GET request if needed
+        return redirect("course_registration")
 
 # ########################################################
 

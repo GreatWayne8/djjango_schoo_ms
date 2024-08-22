@@ -57,7 +57,7 @@ class CustomUserManager(UserManager):
     def get_student_count(self):
         return self.model.objects.filter(is_student=True).count()
 
-    def get_teacher_count(self):  # Changed from get_teacher_count
+    def get_teacher_count(self): 
         return self.model.objects.filter(is_teacher=True).count()
 
     def get_superuser_count(self):
@@ -104,7 +104,7 @@ class User(AbstractUser):
             role = "Admin"
         elif self.is_student:
             role = "Student"
-        elif self.is_teacher:  # Changed from is_teacher
+        elif self.is_teacher:  
             role = "Teacher"
         elif self.is_parent:
             role = "Parent"
@@ -142,7 +142,7 @@ class StudentManager(models.Manager):
     def search(self, query=None):
         qs = self.get_queryset()
         if query is not None:
-            or_lookup = Q(level__icontains=query) | Q(program__icontains=query)
+            or_lookup = Q(level__icontains=query) 
             qs = qs.filter(
                 or_lookup
             ).distinct()  # distinct() is often necessary with Q lookups
@@ -153,7 +153,7 @@ class Student(models.Model):
     student = models.OneToOneField(User, on_delete=models.CASCADE)
     # id_number = models.CharField(max_length=20, unique=True, blank=True)
     level = models.CharField(max_length=25, choices=LEVEL, null=True)
-    program = models.ForeignKey(Program, on_delete=models.CASCADE, null=True)
+    # program = models.ForeignKey(Program, on_delete=models.CASCADE, null=True)
 
     objects = StudentManager()
 
@@ -200,6 +200,19 @@ class Parent(models.Model):
 
     def __str__(self):
         return self.user.username
+
+class Teacher(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    specialization = models.CharField(max_length=100, blank=True, null=True)
+    qualifications = models.TextField(blank=True, null=True)
+    phone = models.CharField(max_length=60, blank=True, null=True)
+    email = models.EmailField(blank=True, null=True)
+
+    class Meta:
+        ordering = ("-user__date_joined",)
+
+    def __str__(self):
+        return "{} (Specialization: {})".format(self.user.get_full_name, self.specialization)
 
 
 class DepartmentHead(models.Model):

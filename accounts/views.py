@@ -12,7 +12,7 @@ from core.models import Session, Semester
 from course.models import Course
 from result.models import TakenCourse
 from .decorators import admin_required
-from .models import User, Student, Parent
+from .models import User, Student, Parent,Teacher
 from .filters import TeacherFilter, StudentFilter
 from .forms import TeacherAddForm, StudentAddForm, ProfileUpdateForm, ParentAddForm
 
@@ -21,6 +21,9 @@ from django.http import HttpResponse
 from django.template.loader import get_template  # To get template which render as pdf
 from xhtml2pdf import pisa
 from django.template.loader import render_to_string  # To render a template into a string
+# from .filters import ProgramFilter
+# from .models import Program
+
 
 class TeacherFilterView(FilterView):
     model = User
@@ -42,6 +45,10 @@ class StudentListView(FilterView):
                 if not key.startswith('_'):  # Skip private attributes
                     print(f"{key}: {value}")
             print("----------")  # Separator betw
+
+# def program_list(request):
+#     filter = ProgramFilter(request.GET, queryset=Program.objects.all())
+#     return render(request, 'program_list.html', {'filter': filter})
 
 
 def validate_username(request):
@@ -129,6 +136,20 @@ def render_to_pdf(template_name, context):
     if pdf.err:
         return HttpResponse('We had some problems generating the PDF')
     
+    return response
+
+
+def create_teachers_pdf_list(request):
+    teachers = Teacher.objects.all()
+    template_path = 'pdf/teacher_pdf_list.html'
+    context = {'teachers': teachers}
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = 'attachment; filename="teacher_list.pdf"'
+    template = get_template(template_path)
+    html = template.render(context)
+    pisa_status = pisa.CreatePDF(html, dest=response)
+    if pisa_status.err:
+        return HttpResponse('We had some errors <pre>' + html + '</pre>')
     return response
 
 @login_required
@@ -273,28 +294,47 @@ def change_password(request):
             "form": form,
         },
     )
+# @login_required
+# @admin_required
+# def staff_add_view(request):
+#     if request.method == "POST":
+#         form = TeacherAddForm(request.POST)
+#         if form.is_valid():
+#             teacher, password = form.save()
+#             # Optionally send the username and password via email or display on screen
+#             messages.success(
+#                 request,
+#                 f"Account for teacher {teacher.first_name} {teacher.last_name} has been created."
+#                 f" Username: {teacher.username}, Password: {password}."
+#             )
+#             return redirect("teacher_list")
+#     else:
+#         form = TeacherAddForm()
 
+#     context = {
+#         "title": "Teacher Add",
+#         "form": form,
+#     }
+
+#     return render(request, "accounts/add_staff.html", context)
+
+    
 @login_required
 @admin_required
 def staff_add_view(request):
     if request.method == "POST":
-        form = StaffAddForm(request.POST)
-        first_name = request.POST.get("first_name")
-        last_name = request.POST.get("last_name")
-
+        form = TeacherAddForm(request.POST)
         if form.is_valid():
-            form.save()
+            teacher = form.save()  # No password return here
+            # Optionally send the username and password via email or display on screen
             messages.success(
                 request,
-                "Account for teacher "
-                + first_name
-                + " "
-                + last_name
-                + " has been created.",
+                f"Account for teacher {teacher.first_name} {teacher.last_name} has been created."
+                f" Username: {teacher.username}."
             )
             return redirect("teacher_list")
     else:
-        form = StaffAddForm()
+        form = TeacherAddForm()
 
     context = {
         "title": "Teacher Add",
@@ -302,6 +342,7 @@ def staff_add_view(request):
     }
 
     return render(request, "accounts/add_staff.html", context)
+
 
 @login_required
 @admin_required
@@ -335,23 +376,19 @@ def delete_staff(request, pk):
     messages.success(request, "Teacher " + staff.get_full_name + " has been deleted.")
     return redirect("teacher_list")
 
+
 @login_required
 @admin_required
 def student_add_view(request):
     if request.method == "POST":
         form = StudentAddForm(request.POST)
-        first_name = request.POST.get("first_name")
-        last_name = request.POST.get("last_name")
-
         if form.is_valid():
-            form.save()
+            student, password = form.save()
+            # Optionally send the username and password via email or display on screen
             messages.success(
                 request,
-                "Account for student "
-                + first_name
-                + " "
-                + last_name
-                + " has been created.",
+                f"Account for student {student.first_name} {student.last_name} has been created."
+                f" Username: {student.username}, Password: {password}."
             )
             return redirect("student_list")
     else:
@@ -363,6 +400,59 @@ def student_add_view(request):
     }
 
     return render(request, "accounts/add_student.html", context)
+# @login_required
+# @admin_required
+# def student_add_view(request):
+#     if request.method == "POST":
+#         form = StudentAddForm(request.POST)
+#         first_name = request.POST.get("first_name")
+#         last_name = request.POST.get("last_name")
+#         if form.is_valid():
+#             form.save()
+#             messages.success(
+#                 request,
+#                 "Account for " + first_name + " " + last_name + " has been created.",
+#             )
+#             return redirect("student_list")
+#         else:
+#             messages.error(request, "Correct the error(s) below.")
+#     else:
+#         form = StudentAddForm()
+
+#     return render(
+#         request,
+#         "accounts/add_student.html",
+#         {"title": "Add Student", "form": form},
+#     )
+
+
+
+# @login_required
+# @admin_required
+# def student_add_view(request):
+#     if request.method == "POST":
+#         form = StudentAddForm(request.POST)
+#         first_name = request.POST.get("first_name")
+#         last_name = request.POST.get("last_name")
+#         if form.is_valid():
+#             form.save()
+#             messages.success(
+#                 request,
+#                 "Account for " + first_name + " " + last_name + " has been created.",
+#             )
+#             return redirect("student_list")
+#         else:
+#             messages.error(request, "Correct the error(s) below.")
+#     else:
+#         form = StudentAddForm()
+
+#     return render(
+#         request,
+#         "accounts/add_student.html",
+#         {"title": "Add Student", "form": form},
+#     )
+
+
 
 @login_required
 @admin_required

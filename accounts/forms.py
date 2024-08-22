@@ -6,119 +6,218 @@ from django.contrib.auth.forms import (
 )
 from django.contrib.auth.forms import PasswordResetForm
 from course.models import Program
-from .models import User, Student, Parent, RELATION_SHIP, LEVEL, GENDERS
+from .models import User, Student, Parent, Teacher, RELATION_SHIP, LEVEL, GENDERS
+from django.contrib.auth.hashers import make_password
+from django.utils.crypto import get_random_string
+
+
+class AutoGenerateUsernameMixin:
+    def generate_username(self, first_name, last_name):
+        base_username = f"{first_name.lower()}.{last_name.lower()}"
+        unique_username = base_username
+        counter = 1
+        while User.objects.filter(username=unique_username).exists():
+            unique_username = f"{base_username}{counter}"
+            counter += 1
+        return unique_username
+
+    def generate_password(self):
+        return User.objects.make_random_password()
+
+class StudentAddForm(forms.ModelForm, AutoGenerateUsernameMixin):
+    class Meta:
+        model = Student
+        fields = ["level"]
+    
+    def save(self, commit=True):
+        student = super().save(commit=False)
+        student.username = self.generate_username(student.first_name, student.last_name)
+        password = self.generate_password()
+        student.password = make_password(password)
+        
+        if commit:
+            student.save()
+        # Return the password so it can be sent to the user
+        return student, password  
+
+class TeacherAddForm(forms.ModelForm, AutoGenerateUsernameMixin):
+    class Meta:
+        model = Teacher
+        fields =['specialization', 'qualifications']
+    
+    def save(self, commit=True):
+        teacher = super().save(commit=False)
+        teacher.username = self.generate_username(teacher.first_name, teacher.last_name)
+        password = self.generate_password()
+        teacher.password = make_password(password)
+        
+        if commit:
+            teacher.save()
+        # Return the password so it can be sent to the user
+        return teacher, password  
+
+# class TeacherAddForm(UserCreationForm):
+#     username = forms.CharField(
+#         max_length=30,
+#         widget=forms.TextInput(
+#             attrs={
+#                 "type": "text",
+#                 "class": "form-control",
+#             }
+#         ),
+#         label="Username",
+#         required=False,
+#     )
+
+#     first_name = forms.CharField(
+#         max_length=30,
+#         widget=forms.TextInput(
+#             attrs={
+#                 "type": "text",
+#                 "class": "form-control",
+#             }
+#         ),
+#         label="First Name",
+#     )
+
+#     last_name = forms.CharField(
+#         max_length=30,
+#         widget=forms.TextInput(
+#             attrs={
+#                 "type": "text",
+#                 "class": "form-control",
+#             }
+#         ),
+#         label="Last Name",
+#     )
+
+#     address = forms.CharField(
+#         max_length=30,
+#         widget=forms.TextInput(
+#             attrs={
+#                 "type": "text",
+#                 "class": "form-control",
+#             }
+#         ),
+#         label="Address",
+#     )
+
+#     phone = forms.CharField(
+#         max_length=30,
+#         widget=forms.TextInput(
+#             attrs={
+#                 "type": "text",
+#                 "class": "form-control",
+#             }
+#         ),
+#         label="Mobile No.",
+#     )
+
+#     email = forms.CharField(
+#         max_length=30,
+#         widget=forms.TextInput(
+#             attrs={
+#                 "type": "text",
+#                 "class": "form-control",
+#             }
+#         ),
+#         label="Email",
+#     )
+
+#     password1 = forms.CharField(
+#         max_length=30,
+#         widget=forms.TextInput(
+#             attrs={
+#                 "type": "password",
+#                 "class": "form-control",
+#             }
+#         ),
+#         label="Password",
+#         required=False,
+#     )
+
+#     password2 = forms.CharField(
+#         max_length=30,
+#         widget=forms.TextInput(
+#             attrs={
+#                 "type": "password",
+#                 "class": "form-control",
+#             }
+#         ),
+#         label="Password Confirmation",
+#         required=False,
+#     )
+
+#     class Meta(UserCreationForm.Meta):
+#         model = User
+
+#     @transaction.atomic()
+#     def save(self, commit=True):
+#         user = super().save(commit=False)
+#         user.is_teacher = True
+#         user.first_name = self.cleaned_data.get("first_name")
+#         user.last_name = self.cleaned_data.get("last_name")
+#         user.phone = self.cleaned_data.get("phone")
+#         user.address = self.cleaned_data.get("address")
+#         user.email = self.cleaned_data.get("email")
+
+#         if commit:
+#             user.save()
+
+#         return user
 
 
 class TeacherAddForm(UserCreationForm):
-    username = forms.CharField(
-        max_length=30,
-        widget=forms.TextInput(
-            attrs={
-                "type": "text",
-                "class": "form-control",
-            }
-        ),
-        label="Username",
-        required=False,
-    )
-
     first_name = forms.CharField(
         max_length=30,
-        widget=forms.TextInput(
-            attrs={
-                "type": "text",
-                "class": "form-control",
-            }
-        ),
+        widget=forms.TextInput(attrs={"class": "form-control"}),
         label="First Name",
     )
-
+    
     last_name = forms.CharField(
         max_length=30,
-        widget=forms.TextInput(
-            attrs={
-                "type": "text",
-                "class": "form-control",
-            }
-        ),
+        widget=forms.TextInput(attrs={"class": "form-control"}),
         label="Last Name",
     )
-
+    
     address = forms.CharField(
         max_length=30,
-        widget=forms.TextInput(
-            attrs={
-                "type": "text",
-                "class": "form-control",
-            }
-        ),
+        widget=forms.TextInput(attrs={"class": "form-control"}),
         label="Address",
     )
-
+    
     phone = forms.CharField(
         max_length=30,
-        widget=forms.TextInput(
-            attrs={
-                "type": "text",
-                "class": "form-control",
-            }
-        ),
+        widget=forms.TextInput(attrs={"class": "form-control"}),
         label="Mobile No.",
     )
-
-    email = forms.CharField(
+    
+    email = forms.EmailField(
         max_length=30,
-        widget=forms.TextInput(
-            attrs={
-                "type": "text",
-                "class": "form-control",
-            }
-        ),
+        widget=forms.TextInput(attrs={"class": "form-control"}),
         label="Email",
-    )
-
-    password1 = forms.CharField(
-        max_length=30,
-        widget=forms.TextInput(
-            attrs={
-                "type": "password",
-                "class": "form-control",
-            }
-        ),
-        label="Password",
-        required=False,
-    )
-
-    password2 = forms.CharField(
-        max_length=30,
-        widget=forms.TextInput(
-            attrs={
-                "type": "password",
-                "class": "form-control",
-            }
-        ),
-        label="Password Confirmation",
-        required=False,
     )
 
     class Meta(UserCreationForm.Meta):
         model = User
+        fields = UserCreationForm.Meta.fields + ('first_name', 'last_name', 'email', 'address', 'phone')
 
-    @transaction.atomic()
+    @transaction.atomic
     def save(self, commit=True):
         user = super().save(commit=False)
         user.is_teacher = True
         user.first_name = self.cleaned_data.get("first_name")
         user.last_name = self.cleaned_data.get("last_name")
-        user.phone = self.cleaned_data.get("phone")
-        user.address = self.cleaned_data.get("address")
         user.email = self.cleaned_data.get("email")
 
         if commit:
             user.save()
+        
+        # If you need to handle phone and address, you might want to use a profile model
+        # Example: user_profile = TeacherProfile(user=user, phone=self.cleaned_data.get("phone"), address=self.cleaned_data.get("address"))
+        # user_profile.save()
 
         return user
-
 
 class StudentAddForm(UserCreationForm):
     username = forms.CharField(
@@ -170,7 +269,7 @@ class StudentAddForm(UserCreationForm):
                 "class": "form-control",
             }
         ),
-        label="Last name",
+        label="Last name"
     )
 
     gender = forms.CharField(
@@ -245,8 +344,9 @@ class StudentAddForm(UserCreationForm):
         user.gender = self.cleaned_data.get("gender")
         user.address = self.cleaned_data.get("address")
         user.phone = self.cleaned_data.get("phone")
-        user.address = self.cleaned_data.get("address")
         user.email = self.cleaned_data.get("email")
+        password = self.cleaned_data.get('password1')
+        user.set_password(password)  # Ensure the password is hashed before saving
 
         if commit:
             user.save()
@@ -256,8 +356,7 @@ class StudentAddForm(UserCreationForm):
                 program=self.cleaned_data.get("program"),
             )
 
-        return user
-
+        return user, password
 
 class ProfileUpdateForm(UserChangeForm):
     email = forms.EmailField(
@@ -444,6 +543,11 @@ class ParentAddForm(UserCreationForm):
         ),
         label="Password Confirmation",
     )
+
+    # def validate_email(self):
+    #     email = self.cleaned_data['email']
+    #     if User.objects.filter(email__iexact=email, is_active=True).exists():
+    #         raise forms.ValidationError("Email has taken, try another email address. ")
 
     class Meta(UserCreationForm.Meta):
         model = User

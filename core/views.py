@@ -6,7 +6,10 @@ from accounts.decorators import admin_required, teacher_required
 from accounts.models import User, Student
 from .forms import SessionForm, SemesterForm, NewsAndEventsForm
 from .models import NewsAndEvents, ActivityLog, Session, Semester
-
+from .models import (
+    NewsAndEvents, ActivityLog, Session, Semester, TeacherProfile, 
+    StudentProfile, Grade, CourseResource, Event, Enrollment, PageVisit, User
+)
 
 # ########################################################
 # News & Events
@@ -19,22 +22,63 @@ def home_view(request):
         "items": items,
     }
     return render(request, "core/index.html", context)
-
-
 @login_required
 @admin_required
 def dashboard_view(request):
     logs = ActivityLog.objects.all().order_by("-created_at")[:10]
-    gender_count = Student.get_gender_count()
+    
+    # Counting students by gender
+    males_count = StudentProfile.objects.filter(gender='M').count()
+    females_count = StudentProfile.objects.filter(gender='F').count()
+
+    teacher_count = TeacherProfile.objects.count()
+    student_count = StudentProfile.objects.count()
+
+    # average_grades = Grade.objects.values('course').annotate(avg_grade=models.Avg('grade'))
+
+    resources = CourseResource.objects.all()
+    total_videos = resources.filter(resource_type='video').count()
+    total_subjects = resources.filter(resource_type='subject').count()
+    total_docs = resources.filter(resource_type='document').count()
+
+    events = Event.objects.all()
+
+    # enrollments = Enrollment.objects.values('course').annotate(count=models.Count('student'))
+
+    # traffic_data = PageVisit.objects.values('user__user_type').annotate(count=models.Count('id'))
+
     context = {
-        "student_count": User.objects.get_student_count(),
-        "teacher_count": User.objects.get_teacher_count(),
-        "superuser_count": User.objects.get_superuser_count(),
-        "males_count": gender_count["M"],
-        "females_count": gender_count["F"],
+        "student_count": student_count,
+        "teacher_count": teacher_count,
+        "males_count": males_count,
+        "females_count": females_count,
         "logs": logs,
+        # "average_grades": average_grades,
+        "total_videos": total_videos,
+        "total_subjects": total_subjects,
+        "total_docs": total_docs,
+        "events": events,
+        # "enrollments": enrollments,
+        # "traffic_data": traffic_data,
+        # Other context data as needed
     }
+
     return render(request, "core/dashboard.html", context)
+  
+# @login_required
+# @admin_required
+# def dashboard_view(request):
+#     logs = ActivityLog.objects.all().order_by("-created_at")[:10]
+#     gender_count = Student.get_gender_count()
+#     context = {
+#         "student_count": User.objects.get_student_count(),
+#         "teacher_count": User.objects.get_teacher_count(),
+#         "superuser_count": User.objects.get_superuser_count(),
+#         "males_count": gender_count["M"],
+#         "females_count": gender_count["F"],
+#         "logs": logs,
+#     }
+#     return render(request, "core/dashboard.html", context)
 
 
 @login_required
